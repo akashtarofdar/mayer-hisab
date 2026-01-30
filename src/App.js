@@ -30,7 +30,6 @@ import {
   Filter,
   Calendar,
   Save,
-  RefreshCcw,
   WifiOff,
   Banknote,
   Lock,
