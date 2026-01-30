@@ -42,18 +42,27 @@ import {
 // --- Configuration ---
 const APP_PASSWORD = "627425274"; // আপনার গোপন পাসওয়ার্ড
 
-// গ্লোবাল ভেরিয়েবলগুলো সুরক্ষিতভাবে চেক করা (Vercel ESLint Fix)
-// সরাসরি নাম ব্যবহার না করে স্ট্রিং কি (window['name']) ব্যবহার করা হয়েছে যাতে বিল্ড এরর না হয়
-const getGlobalConfig = () => {
-  try {
-    const configStr = window['__firebase_config'];
-    if (configStr) {
-      return JSON.parse(configStr);
-    }
-  } catch (e) {
-    console.error("Config parse error", e);
+/**
+ * গ্লোবাল কনফিগারেশন পাওয়ার জন্য সুরক্ষিত ফাংশন।
+ * ESLint 'no-undef' এরর এড়াতে সরাসরি ভেরিয়েবল ব্যবহার না করে window অবজেক্ট চেক করা হচ্ছে।
+ */
+const getSafeGlobal = (key) => {
+  if (typeof window !== 'undefined' && window[key]) {
+    return window[key];
   }
-  // Fallback: যদি এনভায়রনমেন্টে কনফিগারেশন না থাকে তবে আপনার দেওয়া ডিফল্টটি ব্যবহার হবে
+  return null;
+};
+
+const getFirebaseConfig = () => {
+  const configStr = getSafeGlobal('__firebase_config');
+  if (configStr) {
+    try {
+      return JSON.parse(configStr);
+    } catch (e) {
+      console.error("Config parse error", e);
+    }
+  }
+  // Fallback: আপনার ফায়ারবেস কনফিগারেশন
   return {
     apiKey: "AIzaSyAOE0GiypZD2KAD6UJZRzSzYGvdnEuEoTA",
     authDomain: "mayerhisab.firebaseapp.com",
@@ -64,8 +73,8 @@ const getGlobalConfig = () => {
   };
 };
 
-const firebaseConfig = getGlobalConfig();
-const appId = window['__app_id'] || 'mayer-hisab-personal';
+const firebaseConfig = getFirebaseConfig();
+const appId = getSafeGlobal('__app_id') || 'mayer-hisab-personal';
 
 // Initialize Firebase services
 const app = initializeApp(firebaseConfig);
@@ -183,7 +192,7 @@ export default function App() {
     if (!isAuthorized) return;
     const initAuth = async () => {
       try {
-        const token = window['__initial_auth_token'];
+        const token = getSafeGlobal('__initial_auth_token');
 
         if (token) {
           await signInWithCustomToken(auth, token);
